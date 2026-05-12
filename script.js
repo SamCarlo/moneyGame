@@ -862,6 +862,8 @@ function initBusiness(p) {
     sold: 0,
     supply: 0,
     revenue: 0,
+    tickRevenue: 0,
+    tickCost: 0,
     price: 10.00,
     counts: {
       loan: 0, tools: 0, machine: 0,
@@ -984,9 +986,12 @@ function advanceBusiness(p) {
   const revenue  = sold * biz.price;
   biz.revenue  += revenue;
   p.money      += revenue;
+  biz.tickRevenue = revenue;
 
   // 3. Ongoing costs
-  p.money -= dailyOngoingCost(biz);
+  const tickCost = dailyOngoingCost(biz);
+  p.money -= tickCost;
+  biz.tickCost = tickCost;
 
   // 4. R&D progress + reveals
   if (biz.counts.rd > 0) {
@@ -1083,6 +1088,13 @@ function setPrice(p, newPrice) {
   p.biz.price = v;
 }
 
+function formatMoneyDecimal(amount) {
+  const a = Math.abs(amount);
+  const sign = amount < 0 ? '-' : '';
+  if (a >= 1000) return sign + '$' + Math.round(a).toLocaleString('en-US');
+  return sign + '$' + a.toFixed(2);
+}
+
 function fmtNum(n) {
   if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
   if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
@@ -1161,15 +1173,14 @@ function updateBusinessCard(card, p) {
   const prod = computeProductionRate(biz);
   const sell = computeSellRate(biz);
   const ongoing = dailyOngoingCost(biz);
-  const effectiveSell = Math.min(sell, prod || sell);  // can't sell faster than you make once supply is gone
-  const revPerSec = effectiveSell * biz.price;
-  const netPerSec = revPerSec - ongoing;  // ongoing is daily; treat as per-tick cost
+  const revPerSec = biz.tickRevenue;
+  const netPerSec = revPerSec - biz.tickCost;
   card.querySelector('.js-rates').textContent =
     `Production: ${fmtNum(prod)}/s · Selling: ${sell.toFixed(2)}/s · Costs: ${formatMoney(ongoing)}/day`;
   card.querySelector('.js-rev').textContent    = formatMoney(biz.revenue);
-  card.querySelector('.js-revsec').textContent = formatMoney(revPerSec);
+  card.querySelector('.js-revsec').textContent = formatMoneyDecimal(revPerSec);
   const netEl = card.querySelector('.js-netsec');
-  netEl.textContent = (netPerSec >= 0 ? '+' : '') + formatMoney(netPerSec);
+  netEl.textContent = (netPerSec >= 0 ? '+' : '') + formatMoneyDecimal(netPerSec);
   netEl.className = 'stat-val js-netsec ' + (netPerSec < 0 ? 'bad' : 'good');
 
   // Resource buttons
