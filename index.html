@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Money Game</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header>
+  <h1>The Money Game</h1>
+  <div id="header-stats" class="hidden">
+    <div class="stat"><span class="label">Round</span><span id="round-display">—</span></div>
+    <div class="stat"><span class="label">Phase</span><span id="phase-display">—</span></div>
+    <div class="stat"><span class="label">Total savings</span><span id="total-display">$0</span></div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ─────────────── SETUP: number of players ─────────────── -->
+  <section id="setup-count" class="screen">
+    <h2>Set up the game</h2>
+    <p class="muted">Enter between 1 and 25 players. A normal classroom round is 18–20.</p>
+    <label>How many players?
+      <input type="number" id="player-count-input" min="1" max="25" value="20" />
+    </label>
+    <button id="setup-count-next" class="primary">Continue →</button>
+  </section>
+
+  <!-- ─────────────── SETUP: each player fills in info ─────────────── -->
+  <section id="setup-players" class="screen hidden">
+    <h2>Player roster</h2>
+    <p class="muted">Pick a name, a job, and a place to live for each player.</p>
+    <div id="player-form-list"></div>
+    <button id="setup-players-start" class="primary">Start the game →</button>
+  </section>
+
+  <!-- ─────────────── GAME DASHBOARD ─────────────── -->
+  <section id="dashboard" class="screen hidden">
+    <div class="controls">
+      <button id="advance-btn" class="primary"></button>
+      <button id="log-toggle" class="ghost">Show last round details</button>
+    </div>
+
+    <div id="last-round-log" class="hidden"></div>
+
+    <div id="player-grid"></div>
+  </section>
+
+  <!-- ─────────────── INVESTMENT SETUP (after month 6) ─────────────── -->
+  <section id="invest-setup" class="screen hidden">
+    <h2>Choose your investments</h2>
+    <p>Six months in, your players have some savings. Now it's time to put that money to work.
+       Drag each player from the pool below into one of the three portfolios. Every player must
+       land in exactly one portfolio.</p>
+
+    <div id="player-pool" class="drop-zone">
+      <h3>Unassigned players</h3>
+      <div class="player-chips"></div>
+    </div>
+
+    <div id="portfolio-zones"></div>
+
+    <button id="invest-confirm" class="primary" disabled>Begin the 10-year run →</button>
+  </section>
+
+  <!-- ─────────────── PHASE 3: WIDGET BUSINESS ─────────────── -->
+  <section id="widget-game" class="screen hidden">
+    <div class="widget-header">
+      <div>
+        <h2 style="margin-bottom:0.2rem">Build your business venture! Make widgets.</h2>
+        <p class="muted" style="margin:0">Spend your life earnings on resources. Make widgets. Sell widgets. Survive the lawsuits.</p>
+      </div>
+      <div class="widget-timer">
+        <div class="stat"><span class="label">Time left</span><span id="widget-timer-display">10:00</span></div>
+        <button id="widget-end-btn" class="ghost">End early →</button>
+      </div>
+    </div>
+    <div id="widget-grid"></div>
+  </section>
+
+  <!-- ─────────────── END SCREEN ─────────────── -->
+  <section id="end-screen" class="screen hidden">
+    <h2>10 years and 6 months later…</h2>
+    <p class="muted">Final balances, sorted from least to greatest. Negative bars mean the player
+       is in debt.</p>
+    <div id="chart"></div>
+    <button id="restart-btn" class="ghost">Play again</button>
+  </section>
+
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>
