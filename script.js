@@ -832,24 +832,24 @@ const BUYABLES = [
   { id: 'lawyer',        name: 'Hire lawyer',         upfront: 0,        yearlyCost: 200000, locked: true,
     blurb: '$200k/yr. Mitigates lawsuit damage.' },
 
-  { id: 'marketing1',    name: 'Local ads',           upfront: 200000,   once: true,
-    blurb: 'x5 demand.' },
-  { id: 'marketing2',    name: 'Regional campaign',   upfront: 500000,   once: true, locked: true,
-    blurb: 'x6 demand (stacks).' },
-  { id: 'marketing3',    name: 'National TV spots',   upfront: 1000000,  once: true, locked: true,
-    blurb: 'x7 demand (stacks).' },
-  { id: 'marketing4',    name: 'Celebrity endorsement', upfront: 2500000, once: true, locked: true,
-    blurb: 'x8 demand (stacks).' },
-  { id: 'marketing5',    name: 'Global brand campaign', upfront: 5000000, once: true, locked: true,
+  { id: 'marketing1',    name: 'Local ads',           upfront: 50000,    once: true,
+    blurb: 'x8 demand.' },
+  { id: 'marketing2',    name: 'Regional campaign',   upfront: 150000,   once: true, locked: true,
     blurb: 'x10 demand (stacks).' },
+  { id: 'marketing3',    name: 'National TV spots',   upfront: 400000,   once: true, locked: true,
+    blurb: 'x15 demand (stacks).' },
+  { id: 'marketing4',    name: 'Celebrity endorsement', upfront: 800000, once: true, locked: true,
+    blurb: 'x20 demand (stacks).' },
+  { id: 'marketing5',    name: 'Global brand campaign', upfront: 1500000, once: true, locked: true,
+    blurb: 'x30 demand (stacks).' },
 ];
 
 const MARKETING_MULTS = {
-  marketing1: 5,
-  marketing2: 6,
-  marketing3: 7,
-  marketing4: 8,
-  marketing5: 10,
+  marketing1: 8,
+  marketing2: 10,
+  marketing3: 15,
+  marketing4: 20,
+  marketing5: 30,
 };
 
 let widgetTimer    = null;
@@ -862,7 +862,7 @@ function initBusiness(p) {
     sold: 0,
     supply: 0,
     revenue: 0,
-    price: 1.00,
+    price: 10.00,
     counts: {
       loan: 0, tools: 0, machine: 0,
       smallFactory: 0, mediumFactory: 0, largeFactory: 0,
@@ -950,9 +950,9 @@ function computeProductionRate(biz) {
 }
 
 function computeSellRate(biz) {
-  // Base 1/sec at price $1; rate inversely proportional to price.
+  // Base demand calibrated so price $10 sells at 1/sec with no marketing.
   const price = Math.max(0.01, biz.price);
-  return (1 / price) * sellMultiplier(biz);
+  return (10 / price) * sellMultiplier(biz);
 }
 
 function dailyOngoingCost(biz) {
@@ -1114,9 +1114,12 @@ function buildBusinessCard(p) {
       <div><div class="stat-label">Produced</div><div class="stat-val js-prod">0</div></div>
       <div><div class="stat-label">Sold</div><div class="stat-val js-sold">0</div></div>
       <div><div class="stat-label">Supply</div><div class="stat-val js-supply">0</div></div>
+      <div><div class="stat-label">Revenue</div><div class="stat-val js-rev">$0</div></div>
+      <div><div class="stat-label">Rev/sec</div><div class="stat-val js-revsec">$0</div></div>
+      <div><div class="stat-label">Net/sec</div><div class="stat-val js-netsec">$0</div></div>
     </div>
     <div class="biz-row">
-      <label>Price $<input type="number" class="biz-price" step="0.05" min="0.01" value="1.00" /></label>
+      <label>Price $<input type="number" class="biz-price" step="0.50" min="0.01" value="10.00" /></label>
       <button class="biz-click-btn">Make widget</button>
     </div>
     <div class="biz-rate-line js-rates"></div>
@@ -1158,8 +1161,16 @@ function updateBusinessCard(card, p) {
   const prod = computeProductionRate(biz);
   const sell = computeSellRate(biz);
   const ongoing = dailyOngoingCost(biz);
+  const effectiveSell = Math.min(sell, prod || sell);  // can't sell faster than you make once supply is gone
+  const revPerSec = effectiveSell * biz.price;
+  const netPerSec = revPerSec - ongoing;  // ongoing is daily; treat as per-tick cost
   card.querySelector('.js-rates').textContent =
     `Production: ${fmtNum(prod)}/s · Selling: ${sell.toFixed(2)}/s · Costs: ${formatMoney(ongoing)}/day`;
+  card.querySelector('.js-rev').textContent    = formatMoney(biz.revenue);
+  card.querySelector('.js-revsec').textContent = formatMoney(revPerSec);
+  const netEl = card.querySelector('.js-netsec');
+  netEl.textContent = (netPerSec >= 0 ? '+' : '') + formatMoney(netPerSec);
+  netEl.className = 'stat-val js-netsec ' + (netPerSec < 0 ? 'bad' : 'good');
 
   // Resource buttons
   const buttons = card.querySelectorAll('.biz-buy');

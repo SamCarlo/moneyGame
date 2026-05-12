@@ -291,7 +291,8 @@ button.ghost {
 .biz-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.35rem;
+  row-gap: 0.45rem;
+  column-gap: 0.35rem;
   background: var(--panel-2);
   border-radius: 6px;
   padding: 0.4rem 0.5rem;
