@@ -831,7 +831,26 @@ const BUYABLES = [
     blurb: 'x3 selling rate. (Unlocks via R&D.)' },
   { id: 'lawyer',        name: 'Hire lawyer',         upfront: 0,        yearlyCost: 200000, locked: true,
     blurb: '$200k/yr. Mitigates lawsuit damage.' },
+
+  { id: 'marketing1',    name: 'Local ads',           upfront: 200000,   once: true,
+    blurb: 'x1.5 demand.' },
+  { id: 'marketing2',    name: 'Regional campaign',   upfront: 500000,   once: true, locked: true,
+    blurb: 'x2 demand (stacks).' },
+  { id: 'marketing3',    name: 'National TV spots',   upfront: 1000000,  once: true, locked: true,
+    blurb: 'x2 demand (stacks).' },
+  { id: 'marketing4',    name: 'Celebrity endorsement', upfront: 2500000, once: true, locked: true,
+    blurb: 'x2.5 demand (stacks).' },
+  { id: 'marketing5',    name: 'Global brand campaign', upfront: 5000000, once: true, locked: true,
+    blurb: 'x3 demand (stacks).' },
 ];
+
+const MARKETING_MULTS = {
+  marketing1: 1.5,
+  marketing2: 2,
+  marketing3: 2,
+  marketing4: 2.5,
+  marketing5: 3,
+};
 
 let widgetTimer    = null;
 let widgetElapsed  = 0;     // seconds
@@ -849,10 +868,12 @@ function initBusiness(p) {
       smallFactory: 0, mediumFactory: 0, largeFactory: 0,
       rd: 0, computer: 0, robotics: 0, logistics: 0,
       lawyer: 0,
+      marketing1: 0, marketing2: 0, marketing3: 0, marketing4: 0, marketing5: 0,
     },
     rdElapsed:        0,
     rdUnlockTimes:    null,  // [computerT, roboticsT, logisticsT] in seconds-since-rd
-    unlocked:         { computer: false, robotics: false, logistics: false, lawyer: false },
+    unlocked:         { computer: false, robotics: false, logistics: false, lawyer: false,
+                        marketing2: false, marketing3: false, marketing4: false, marketing5: false },
     pendingPulse:     [],
     lawsuitScheduled: LAWSUIT_FIRST_MIN + Math.random() * (LAWSUIT_FIRST_MAX - LAWSUIT_FIRST_MIN),
     lawsuitsFired:    0,
@@ -895,7 +916,11 @@ function productionMultiplier(biz) {
   return m;
 }
 function sellMultiplier(biz) {
-  return biz.counts.logistics ? 3 : 1;
+  let m = biz.counts.logistics ? 3 : 1;
+  for (const id of Object.keys(MARKETING_MULTS)) {
+    if (biz.counts[id]) m *= MARKETING_MULTS[id];
+  }
+  return m;
 }
 
 function computeProductionRate(biz) {
@@ -1024,6 +1049,17 @@ function attemptBuy(p, id) {
   if (b.instant) p.money += b.instant;
   biz.counts[id] += 1;
   pushEvent(biz, `Bought ${b.name} (−${formatMoney(b.upfront)})`, 'good');
+
+  const mktChain = ['marketing1', 'marketing2', 'marketing3', 'marketing4', 'marketing5'];
+  const mIdx = mktChain.indexOf(id);
+  if (mIdx >= 0 && mIdx < mktChain.length - 1) {
+    const next = mktChain[mIdx + 1];
+    if (!biz.unlocked[next]) {
+      biz.unlocked[next] = true;
+      biz.pendingPulse.push(next);
+    }
+  }
+
   renderWidgetGrid();
 }
 
