@@ -813,14 +813,14 @@ const BUYABLES = [
     blurb: '+$100k cash now. Costs $200/day in interest forever.' },
   { id: 'tools',         name: 'Workshop tools',      upfront: 5000,
     blurb: '+1 widget per click.' },
-  { id: 'worker',        name: 'Hire worker',         upfront: 0,        yearlyCost: 53000,
-    blurb: '$53k/yr. +1 widget/sec each. Runs factories.' },
+  { id: 'machine',       name: 'Widget Machine',      upfront: 1000,     linearStep: 1000,
+    blurb: 'Flat $1k base; price grows by $1k each. +10/sec. Runs factories.' },
   { id: 'smallFactory',  name: 'Small factory',       upfront: 100000,
-    blurb: '+10/sec. Needs 5 workers.' },
+    blurb: '+10/sec. Needs 5 machines.' },
   { id: 'mediumFactory', name: 'Medium factory',      upfront: 1000000,
-    blurb: '+100/sec. Needs 15 workers.' },
+    blurb: '+100/sec. Needs 15 machines.' },
   { id: 'largeFactory',  name: 'Large factory',       upfront: 10000000,
-    blurb: '+1000/sec. Needs 60 workers.' },
+    blurb: '+1000/sec. Needs 60 machines.' },
   { id: 'rd',            name: 'R&D Department',      upfront: 0,        yearlyCost: 100000,
     blurb: '$100k/yr. Reveals efficiencies over time.', once: true },
   { id: 'computer',      name: 'Computer automation', upfront: 250000,   locked: true, once: true,
@@ -833,23 +833,23 @@ const BUYABLES = [
     blurb: '$200k/yr. Mitigates lawsuit damage.' },
 
   { id: 'marketing1',    name: 'Local ads',           upfront: 200000,   once: true,
-    blurb: 'x1.5 demand.' },
+    blurb: 'x5 demand.' },
   { id: 'marketing2',    name: 'Regional campaign',   upfront: 500000,   once: true, locked: true,
-    blurb: 'x2 demand (stacks).' },
+    blurb: 'x6 demand (stacks).' },
   { id: 'marketing3',    name: 'National TV spots',   upfront: 1000000,  once: true, locked: true,
-    blurb: 'x2 demand (stacks).' },
+    blurb: 'x7 demand (stacks).' },
   { id: 'marketing4',    name: 'Celebrity endorsement', upfront: 2500000, once: true, locked: true,
-    blurb: 'x2.5 demand (stacks).' },
+    blurb: 'x8 demand (stacks).' },
   { id: 'marketing5',    name: 'Global brand campaign', upfront: 5000000, once: true, locked: true,
-    blurb: 'x3 demand (stacks).' },
+    blurb: 'x10 demand (stacks).' },
 ];
 
 const MARKETING_MULTS = {
-  marketing1: 1.5,
-  marketing2: 2,
-  marketing3: 2,
-  marketing4: 2.5,
-  marketing5: 3,
+  marketing1: 5,
+  marketing2: 6,
+  marketing3: 7,
+  marketing4: 8,
+  marketing5: 10,
 };
 
 let widgetTimer    = null;
@@ -864,7 +864,7 @@ function initBusiness(p) {
     revenue: 0,
     price: 1.00,
     counts: {
-      loan: 0, tools: 0, worker: 0,
+      loan: 0, tools: 0, machine: 0,
       smallFactory: 0, mediumFactory: 0, largeFactory: 0,
       rd: 0, computer: 0, robotics: 0, logistics: 0,
       lawyer: 0,
@@ -926,27 +926,27 @@ function sellMultiplier(biz) {
 function computeProductionRate(biz) {
   const c = biz.counts;
   const factoryNeed = c.smallFactory * 5 + c.mediumFactory * 15 + c.largeFactory * 60;
-  const workersForFactories = Math.min(c.worker, factoryNeed);
+  const machinesForFactories = Math.min(c.machine, factoryNeed);
 
   let factoryShare = 0;
-  let remainingW   = workersForFactories;
-  if (c.largeFactory && remainingW >= 60) {
-    const n = Math.min(c.largeFactory, Math.floor(remainingW / 60));
+  let remainingM   = machinesForFactories;
+  if (c.largeFactory && remainingM >= 60) {
+    const n = Math.min(c.largeFactory, Math.floor(remainingM / 60));
     factoryShare += n * 1000;
-    remainingW -= n * 60;
+    remainingM -= n * 60;
   }
-  if (c.mediumFactory && remainingW >= 15) {
-    const n = Math.min(c.mediumFactory, Math.floor(remainingW / 15));
+  if (c.mediumFactory && remainingM >= 15) {
+    const n = Math.min(c.mediumFactory, Math.floor(remainingM / 15));
     factoryShare += n * 100;
-    remainingW -= n * 15;
+    remainingM -= n * 15;
   }
-  if (c.smallFactory && remainingW >= 5) {
-    const n = Math.min(c.smallFactory, Math.floor(remainingW / 5));
+  if (c.smallFactory && remainingM >= 5) {
+    const n = Math.min(c.smallFactory, Math.floor(remainingM / 5));
     factoryShare += n * 10;
-    remainingW -= n * 5;
+    remainingM -= n * 5;
   }
-  const freeWorkers = Math.max(0, c.worker - workersForFactories);
-  return (freeWorkers + factoryShare) * productionMultiplier(biz);
+  const freeMachines = Math.max(0, c.machine - machinesForFactories);
+  return (freeMachines * 10 + factoryShare) * productionMultiplier(biz);
 }
 
 function computeSellRate(biz) {
@@ -957,7 +957,7 @@ function computeSellRate(biz) {
 
 function dailyOngoingCost(biz) {
   const c = biz.counts;
-  const yearly = c.worker * 53000 + c.rd * 100000 + c.lawyer * 200000;
+  const yearly = c.rd * 100000 + c.lawyer * 200000;
   const daily  = yearly / DAYS_PER_YEAR + c.loan * 200;
   return daily;
 }
@@ -1031,6 +1031,11 @@ function fireLawsuit(p) {
   }
 }
 
+function currentCost(b, biz) {
+  if (b.linearStep) return b.upfront + b.linearStep * biz.counts[b.id];
+  return b.upfront;
+}
+
 function canShowBuyable(b, biz) {
   if (b.locked && !biz.unlocked[b.id]) return false;
   if (b.once && biz.counts[b.id] > 0) return false;
@@ -1044,11 +1049,12 @@ function attemptBuy(p, id) {
   if (b.locked && !biz.unlocked[id]) return;
   if (b.once && biz.counts[id] > 0 && id !== 'rd') return;
   if (id === 'rd' && biz.counts.rd > 0) return;
-  if (p.money < b.upfront) return;
-  p.money -= b.upfront;
+  const cost = currentCost(b, biz);
+  if (p.money < cost) return;
+  p.money -= cost;
   if (b.instant) p.money += b.instant;
   biz.counts[id] += 1;
-  pushEvent(biz, `Bought ${b.name} (−${formatMoney(b.upfront)})`, 'good');
+  pushEvent(biz, `Bought ${b.name} (−${formatMoney(cost)})`, 'good');
 
   const mktChain = ['marketing1', 'marketing2', 'marketing3', 'marketing4', 'marketing5'];
   const mIdx = mktChain.indexOf(id);
@@ -1165,15 +1171,13 @@ function updateBusinessCard(card, p) {
     if (!visible) return;
 
     const owned = biz.counts[id];
-    const affordable = p.money >= b.upfront;
-    const purchasable =
-      (!b.once || (b.once && owned === 0)) ||
-      (b.id === 'rd' && owned === 0);
+    const cost  = currentCost(b, biz);
+    const affordable = p.money >= cost;
     btn.disabled = !affordable || (b.once && owned > 0);
 
     btn.innerHTML = `
       <span class="buy-name">${escapeHtml(b.name)}</span>
-      <span class="buy-cost">${b.upfront > 0 ? formatMoney(b.upfront) : (b.instant ? `+${formatMoney(b.instant)}` : 'Free')}</span>
+      <span class="buy-cost">${cost > 0 ? formatMoney(cost) : (b.instant ? `+${formatMoney(b.instant)}` : 'Free')}</span>
       <span class="buy-blurb">${escapeHtml(b.blurb)}</span>
       ${owned > 0 ? `<span class="buy-count">Owned: ${owned}</span>` : ''}
     `;
