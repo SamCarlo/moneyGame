@@ -952,9 +952,12 @@ function computeProductionRate(biz) {
 }
 
 function computeSellRate(biz) {
-  // Base demand calibrated so price $10 sells at 1/sec with no marketing.
+  // Linear willingness-to-pay: demand falls to 0 at PRICE_MAX.
+  // Revenue (price * demand) peaks at price = PRICE_MAX / 2 = $20.
+  const PRICE_MAX = 40;
   const price = Math.max(0.01, biz.price);
-  return (10 / price) * sellMultiplier(biz);
+  const fraction = Math.max(0, 1 - price / PRICE_MAX);
+  return 2 * fraction * sellMultiplier(biz);
 }
 
 function dailyOngoingCost(biz) {
@@ -1134,6 +1137,7 @@ function buildBusinessCard(p) {
       <label>Price $<input type="number" class="biz-price" step="0.50" min="0.01" value="10.00" /></label>
       <button class="biz-click-btn">Make widget</button>
     </div>
+    <div class="biz-price-hint js-price-hint"></div>
     <div class="biz-rate-line js-rates"></div>
     <div class="biz-resources"></div>
     <div class="biz-events js-events"></div>
@@ -1177,6 +1181,24 @@ function updateBusinessCard(card, p) {
   const netPerSec = revPerSec - biz.tickCost;
   card.querySelector('.js-rates').textContent =
     `Production: ${fmtNum(prod)}/s · Selling: ${sell.toFixed(2)}/s · Costs: ${formatMoney(ongoing)}/day`;
+
+  // Price hint: show demand curve position and projected rev/sec at current price.
+  const PRICE_MAX = 40, OPT_PRICE = 20;
+  const mult = sellMultiplier(biz);
+  const projectedRev = sell * biz.price;
+  const peakRev = 2 * 0.5 * mult * OPT_PRICE; // demand at $20 × $20
+  const pct = peakRev > 0 ? Math.round((projectedRev / peakRev) * 100) : 0;
+  const hintEl = card.querySelector('.js-price-hint');
+  if (biz.price >= PRICE_MAX) {
+    hintEl.textContent = `Too expensive — customers walk away. Try lowering price.`;
+    hintEl.className = 'biz-price-hint bad';
+  } else {
+    const tag = biz.price < OPT_PRICE - 2 ? 'underpriced' :
+                biz.price > OPT_PRICE + 2 ? 'overpriced' : 'near optimum';
+    hintEl.textContent =
+      `Demand ${sell.toFixed(2)}/s → ${formatMoneyDecimal(projectedRev)}/s (${pct}% of peak, ${tag}). Peak at $${OPT_PRICE}, demand 0 at $${PRICE_MAX}.`;
+    hintEl.className = 'biz-price-hint ' + (pct >= 90 ? 'good' : '');
+  }
   card.querySelector('.js-rev').textContent    = formatMoney(biz.revenue);
   card.querySelector('.js-revsec').textContent = formatMoneyDecimal(revPerSec);
   const netEl = card.querySelector('.js-netsec');

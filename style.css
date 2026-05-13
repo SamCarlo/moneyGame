@@ -322,6 +322,9 @@ button.ghost {
 }
 .biz-click-btn:hover { background: #6fcde2; }
 .biz-rate-line { color: var(--ink-dim); font-size: 0.72rem; }
+.biz-price-hint { color: var(--ink-dim); font-size: 0.72rem; margin-top: 0.2rem; font-style: italic; }
+.biz-price-hint.good { color: #4caf50; font-style: normal; }
+.biz-price-hint.bad  { color: #e57373; font-style: normal; }
 .biz-resources {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
