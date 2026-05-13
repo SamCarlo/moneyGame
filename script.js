@@ -1058,7 +1058,6 @@ function attemptBuy(p, id) {
   if (b.once && biz.counts[id] > 0 && id !== 'rd') return;
   if (id === 'rd' && biz.counts.rd > 0) return;
   const cost = currentCost(b, biz);
-  if (p.money < cost) return;
   p.money -= cost;
   if (b.instant) p.money += b.instant;
   biz.counts[id] += 1;
@@ -1216,8 +1215,7 @@ function updateBusinessCard(card, p) {
 
     const owned = biz.counts[id];
     const cost  = currentCost(b, biz);
-    const affordable = p.money >= cost;
-    btn.disabled = !affordable || (b.once && owned > 0);
+    btn.disabled = (b.once && owned > 0);
 
     btn.innerHTML = `
       <span class="buy-name">${escapeHtml(b.name)}</span>
