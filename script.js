@@ -1191,13 +1191,13 @@ function updateBusinessCard(card, p) {
   const hintEl = card.querySelector('.js-price-hint');
   if (biz.price >= PRICE_MAX) {
     hintEl.textContent = `Too expensive — customers walk away. Try lowering price.`;
-    hintEl.className = 'biz-price-hint bad';
+    hintEl.className = 'biz-price-hint js-price-hint bad';
   } else {
     const tag = biz.price < OPT_PRICE - 2 ? 'underpriced' :
                 biz.price > OPT_PRICE + 2 ? 'overpriced' : 'near optimum';
     hintEl.textContent =
       `Demand ${sell.toFixed(2)}/s → ${formatMoneyDecimal(projectedRev)}/s (${pct}% of peak, ${tag}). Peak at $${OPT_PRICE}, demand 0 at $${PRICE_MAX}.`;
-    hintEl.className = 'biz-price-hint ' + (pct >= 90 ? 'good' : '');
+    hintEl.className = 'biz-price-hint js-price-hint ' + (pct >= 90 ? 'good' : '');
   }
   card.querySelector('.js-rev').textContent    = formatMoney(biz.revenue);
   card.querySelector('.js-revsec').textContent = formatMoneyDecimal(revPerSec);
