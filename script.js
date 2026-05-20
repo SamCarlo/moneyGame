@@ -148,6 +148,37 @@ const OCCUPATIONS = [
     bonusChance: 0.04, bonusAmt: 3000,
     scoreChance: 0.025, scoreMin: 10000, scoreMax: 50000,
     scoreName: 'Licensing deal / big gig' },
+
+  // ── Additional careers ───────────────────────────────────────────
+  { id: 'physical-therapist', name: 'Physical therapist', education: 'grad',
+    type: 'salary', baseMonthly: 8000, noisePct: 0.05,
+    bonusChance: 0.04, bonusAmt: 2500, raiseChance: 0.03, raisePct: 0.03 },
+
+  { id: 'astronomer', name: 'Astronomer / research scientist', education: 'grad',
+    type: 'salary', baseMonthly: 9000, noisePct: 0.04,
+    bonusChance: 0.03, bonusAmt: 3000, raiseChance: 0.02, raisePct: 0.03 },
+
+  { id: 'hotel-manager', name: 'Hotel chain manager', education: 'college',
+    type: 'salary', baseMonthly: 7200, noisePct: 0.06,
+    bonusChance: 0.05, bonusAmt: 3500, raiseChance: 0.03, raisePct: 0.03 },
+
+  { id: 'journalist', name: 'Journalist / reporter', education: 'college',
+    type: 'mixed', baseMonthly: 4200, noisePct: 0.18,
+    bonusChance: 0.04, bonusAmt: 1500, raiseChance: 0.02, raisePct: 0.02 },
+
+  { id: 'medical-assistant', name: 'Medical assistant', education: 'trade',
+    type: 'salary', baseMonthly: 3300, noisePct: 0.06,
+    raiseChance: 0.03, raisePct: 0.02 },
+
+  { id: 'seamstress', name: 'Seamstress / tailor', education: 'none',
+    type: 'gig', baseMonthly: 3200, noisePct: 0.35,
+    bonusChance: 0.04, bonusAmt: 1200 },
+
+  { id: 'author', name: 'Author / novelist', education: 'none',
+    type: 'creative', baseMonthly: 2400, noisePct: 0.90,
+    bonusChance: 0.04, bonusAmt: 2000, dipChance: 0.08, dipPct: 0.50,
+    scoreChance: 0.03, scoreMin: 12000, scoreMax: 60000,
+    scoreName: 'Book deal / bestseller royalties' },
 ];
 
 // ──────────────────────────────────────────────────────────
@@ -813,14 +844,16 @@ const BUYABLES = [
     blurb: '+$100k cash now. Costs $200/day in interest forever.' },
   { id: 'tools',         name: 'Workshop tools',      upfront: 5000,
     blurb: '+1 widget per click.' },
+  { id: 'powerTools',    name: 'Power tools',         upfront: 40000,
+    blurb: '+10 widgets per click.' },
   { id: 'machine',       name: 'Widget Machine',      upfront: 1000,     linearStep: 1000,
     blurb: 'Flat $1k base; price grows by $1k each. +10/sec. Runs factories.' },
-  { id: 'smallFactory',  name: 'Small factory',       upfront: 100000,
-    blurb: '+10/sec. Needs 5 machines.' },
-  { id: 'mediumFactory', name: 'Medium factory',      upfront: 1000000,
-    blurb: '+100/sec. Needs 15 machines.' },
-  { id: 'largeFactory',  name: 'Large factory',       upfront: 10000000,
-    blurb: '+1000/sec. Needs 60 machines.' },
+  { id: 'smallFactory',  name: 'Small factory',       upfront: 100000,   requiresMachines: 5,
+    blurb: '+100/sec. Needs 5 machines.' },
+  { id: 'mediumFactory', name: 'Medium factory',      upfront: 1000000,  requiresMachines: 15,
+    blurb: '+1000/sec. Needs 15 machines.' },
+  { id: 'largeFactory',  name: 'Large factory',       upfront: 10000000, requiresMachines: 60,
+    blurb: '+10000/sec. Needs 60 machines.' },
   { id: 'rd',            name: 'R&D Department',      upfront: 0,        yearlyCost: 100000,
     blurb: '$100k/yr. Reveals efficiencies over time.', once: true },
   { id: 'computer',      name: 'Computer automation', upfront: 250000,   locked: true, once: true,
@@ -830,7 +863,7 @@ const BUYABLES = [
   { id: 'logistics',     name: 'Logistical enhancement', upfront: 500000, locked: true, once: true,
     blurb: 'x3 selling rate. (Unlocks via R&D.)' },
   { id: 'lawyer',        name: 'Hire lawyer',         upfront: 0,        yearlyCost: 200000, locked: true,
-    blurb: '$200k/yr. Mitigates lawsuit damage.' },
+    blurb: '$200k/yr. 50% chance to win each lawsuit and pay nothing.' },
 
   { id: 'marketing1',    name: 'Local ads',           upfront: 50000,    once: true,
     blurb: 'x8 demand.' },
@@ -842,6 +875,8 @@ const BUYABLES = [
     blurb: 'x20 demand (stacks).' },
   { id: 'marketing5',    name: 'Global brand campaign', upfront: 1500000, once: true, locked: true,
     blurb: 'x30 demand (stacks).' },
+  { id: 'marketing6',    name: 'Mind control',        upfront: 3000000, once: true, locked: true,
+    blurb: 'x50 demand (stacks).' },
 ];
 
 const MARKETING_MULTS = {
@@ -850,6 +885,7 @@ const MARKETING_MULTS = {
   marketing3: 15,
   marketing4: 20,
   marketing5: 30,
+  marketing6: 50,
 };
 
 let widgetTimer    = null;
@@ -866,16 +902,17 @@ function initBusiness(p) {
     tickCost: 0,
     price: 10.00,
     counts: {
-      loan: 0, tools: 0, machine: 0,
+      loan: 0, tools: 0, powerTools: 0, machine: 0,
       smallFactory: 0, mediumFactory: 0, largeFactory: 0,
       rd: 0, computer: 0, robotics: 0, logistics: 0,
       lawyer: 0,
-      marketing1: 0, marketing2: 0, marketing3: 0, marketing4: 0, marketing5: 0,
+      marketing1: 0, marketing2: 0, marketing3: 0, marketing4: 0, marketing5: 0, marketing6: 0,
     },
     rdElapsed:        0,
     rdUnlockTimes:    null,  // [computerT, roboticsT, logisticsT] in seconds-since-rd
     unlocked:         { computer: false, robotics: false, logistics: false, lawyer: false,
-                        marketing2: false, marketing3: false, marketing4: false, marketing5: false },
+                        marketing2: false, marketing3: false, marketing4: false, marketing5: false,
+                        marketing6: false },
     pendingPulse:     [],
     lawsuitScheduled: LAWSUIT_FIRST_MIN + Math.random() * (LAWSUIT_FIRST_MAX - LAWSUIT_FIRST_MIN),
     lawsuitsFired:    0,
@@ -934,17 +971,17 @@ function computeProductionRate(biz) {
   let remainingM   = machinesForFactories;
   if (c.largeFactory && remainingM >= 60) {
     const n = Math.min(c.largeFactory, Math.floor(remainingM / 60));
-    factoryShare += n * 1000;
+    factoryShare += n * 10000;
     remainingM -= n * 60;
   }
   if (c.mediumFactory && remainingM >= 15) {
     const n = Math.min(c.mediumFactory, Math.floor(remainingM / 15));
-    factoryShare += n * 100;
+    factoryShare += n * 1000;
     remainingM -= n * 15;
   }
   if (c.smallFactory && remainingM >= 5) {
     const n = Math.min(c.smallFactory, Math.floor(remainingM / 5));
-    factoryShare += n * 10;
+    factoryShare += n * 100;
     remainingM -= n * 5;
   }
   const freeMachines = Math.max(0, c.machine - machinesForFactories);
@@ -1025,13 +1062,17 @@ function advanceBusiness(p) {
 
 function fireLawsuit(p) {
   const biz = p.biz;
-  let damage = randIn(50000, 2000000);
-  const lawyerReduction = Math.min(0.9, biz.counts.lawyer * 0.3);
-  damage *= (1 - lawyerReduction);
-  damage = Math.round(damage);
-  p.money -= damage;
   biz.lawsuitsFired += 1;
-  pushEvent(biz, `Lawsuit! −${formatMoney(damage)}` + (lawyerReduction > 0 ? ` (lawyers saved ${(lawyerReduction*100).toFixed(0)}%)` : ''), 'bad');
+
+  // A hired lawyer wins the case outright 50% of the time — full immunity.
+  if (biz.counts.lawyer > 0 && Math.random() < 0.5) {
+    pushEvent(biz, `Lawsuit dismissed — your lawyers won the case!`, 'good');
+    return;
+  }
+
+  const damage = Math.round(randIn(50000, 2000000));
+  p.money -= damage;
+  pushEvent(biz, `Lawsuit! −${formatMoney(damage)}`, 'bad');
   if (!biz.unlocked.lawyer) {
     biz.unlocked.lawyer = true;
     biz.pendingPulse.push('lawyer');
@@ -1047,6 +1088,7 @@ function currentCost(b, biz) {
 function canShowBuyable(b, biz) {
   if (b.locked && !biz.unlocked[b.id]) return false;
   if (b.once && biz.counts[b.id] > 0) return false;
+  if (b.requiresMachines && biz.counts.machine < b.requiresMachines) return false;
   return true;
 }
 
@@ -1063,7 +1105,7 @@ function attemptBuy(p, id) {
   biz.counts[id] += 1;
   pushEvent(biz, `Bought ${b.name} (−${formatMoney(cost)})`, 'good');
 
-  const mktChain = ['marketing1', 'marketing2', 'marketing3', 'marketing4', 'marketing5'];
+  const mktChain = ['marketing1', 'marketing2', 'marketing3', 'marketing4', 'marketing5', 'marketing6'];
   const mIdx = mktChain.indexOf(id);
   if (mIdx >= 0 && mIdx < mktChain.length - 1) {
     const next = mktChain[mIdx + 1];
@@ -1076,9 +1118,33 @@ function attemptBuy(p, id) {
   renderWidgetGrid();
 }
 
+// Sell-back value: 50% of what the most recent unit of this asset cost.
+function sellValue(b, biz) {
+  const owned = biz.counts[b.id];
+  if (owned <= 0) return 0;
+  if (b.linearStep) return 0.5 * (b.upfront + b.linearStep * (owned - 1));
+  return 0.5 * b.upfront;
+}
+
+function canSell(b, biz) {
+  if (b.id === 'loan') return false;   // a loan is a debt, not a sellable asset
+  return biz.counts[b.id] > 0;
+}
+
+function attemptSell(p, id) {
+  const biz = p.biz;
+  const b = BUYABLES.find(x => x.id === id);
+  if (!b || id === 'loan' || biz.counts[id] <= 0) return;
+  const refund = Math.round(sellValue(b, biz));
+  biz.counts[id] -= 1;
+  p.money += refund;
+  pushEvent(biz, `Sold ${b.name} (+${formatMoney(refund)})`, 'good');
+  renderWidgetGrid();
+}
+
 function makeWidgetClick(p) {
   const biz = p.biz;
-  const perClick = 1 + biz.counts.tools;  // tools add +1 each
+  const perClick = 1 + biz.counts.tools + biz.counts.powerTools * 10;
   biz.produced += perClick;
   biz.supply   += perClick;
   renderWidgetGrid();
@@ -1150,11 +1216,23 @@ function buildBusinessCard(p) {
 
   const resBox = card.querySelector('.biz-resources');
   BUYABLES.forEach(b => {
-    const btn = document.createElement('button');
-    btn.className = 'biz-buy';
-    btn.dataset.buyId = b.id;
-    btn.addEventListener('click', () => attemptBuy(p, b.id));
-    resBox.appendChild(btn);
+    const wrap = document.createElement('div');
+    wrap.className = 'biz-resource';
+    wrap.dataset.resId = b.id;
+
+    const buyBtn = document.createElement('button');
+    buyBtn.className = 'biz-buy';
+    buyBtn.dataset.buyId = b.id;
+    buyBtn.addEventListener('click', () => attemptBuy(p, b.id));
+    wrap.appendChild(buyBtn);
+
+    const sellBtn = document.createElement('button');
+    sellBtn.className = 'biz-sell';
+    sellBtn.dataset.sellId = b.id;
+    sellBtn.addEventListener('click', () => attemptSell(p, b.id));
+    wrap.appendChild(sellBtn);
+
+    resBox.appendChild(wrap);
   });
 
   updateBusinessCard(card, p);
@@ -1204,28 +1282,41 @@ function updateBusinessCard(card, p) {
   netEl.textContent = (netPerSec >= 0 ? '+' : '') + formatMoneyDecimal(netPerSec);
   netEl.className = 'stat-val js-netsec ' + (netPerSec < 0 ? 'bad' : 'good');
 
-  // Resource buttons
-  const buttons = card.querySelectorAll('.biz-buy');
-  buttons.forEach(btn => {
-    const id = btn.dataset.buyId;
+  // Resource buy / sell controls
+  const resItems = card.querySelectorAll('.biz-resource');
+  resItems.forEach(wrap => {
+    const id = wrap.dataset.resId;
     const b  = BUYABLES.find(x => x.id === id);
-    const visible = canShowBuyable(b, biz);
-    btn.classList.toggle('hidden', !visible);
-    if (!visible) return;
+    const owned    = biz.counts[id];
+    const visible  = canShowBuyable(b, biz);
+    const sellable = canSell(b, biz);
 
-    const owned = biz.counts[id];
-    const cost  = currentCost(b, biz);
-    btn.disabled = (b.once && owned > 0);
+    wrap.classList.toggle('hidden', !visible && !sellable);
 
-    btn.innerHTML = `
-      <span class="buy-name">${escapeHtml(b.name)}</span>
-      <span class="buy-cost">${cost > 0 ? formatMoney(cost) : (b.instant ? `+${formatMoney(b.instant)}` : 'Free')}</span>
-      <span class="buy-blurb">${escapeHtml(b.blurb)}</span>
-      ${owned > 0 ? `<span class="buy-count">Owned: ${owned}</span>` : ''}
-    `;
-    if (biz.pendingPulse.includes(id)) {
-      btn.classList.add('unlocked-pulse');
-      setTimeout(() => btn.classList.remove('unlocked-pulse'), 2500);
+    const buyBtn = wrap.querySelector('.biz-buy');
+    buyBtn.classList.toggle('hidden', !visible);
+    if (visible) {
+      const cost = currentCost(b, biz);
+      buyBtn.disabled = (b.once && owned > 0);
+      buyBtn.innerHTML = `
+        <span class="buy-name">${escapeHtml(b.name)}</span>
+        <span class="buy-cost">${cost > 0 ? formatMoney(cost) : (b.instant ? `+${formatMoney(b.instant)}` : 'Free')}</span>
+        <span class="buy-blurb">${escapeHtml(b.blurb)}</span>
+        ${owned > 0 ? `<span class="buy-count">Owned: ${owned}</span>` : ''}
+      `;
+      if (biz.pendingPulse.includes(id)) {
+        buyBtn.classList.add('unlocked-pulse');
+        setTimeout(() => buyBtn.classList.remove('unlocked-pulse'), 2500);
+      }
+    }
+
+    const sellBtn = wrap.querySelector('.biz-sell');
+    sellBtn.classList.toggle('hidden', !sellable);
+    if (sellable) {
+      const refund = Math.round(sellValue(b, biz));
+      sellBtn.textContent = visible
+        ? `Sell (+${formatMoney(refund)})`
+        : `Sell ${b.name} (+${formatMoney(refund)})`;
     }
   });
   biz.pendingPulse = [];

@@ -330,6 +330,20 @@ button.ghost {
   grid-template-columns: repeat(2, 1fr);
   gap: 0.3rem;
 }
+.biz-resource {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.biz-sell {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.66rem;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--warn);
+  text-align: center;
+}
+.biz-sell:hover { background: #2f3e52; }
 .biz-buy {
   display: flex;
   flex-direction: column;
